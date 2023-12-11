@@ -1,2 +1,2 @@
-# Internship-6-Library
-DUMP 6th homework - SQL 
+## SQL
+Library database for tracking and lending books.
