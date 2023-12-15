@@ -8,12 +8,11 @@ create table library (
 	openTime time,
 	closeTime time
 );
-
--- book type enum or seperate table?
+create type bookType as enum('school', 'art', 'science', 'biography', 'tehnical');
 create table book (
 	bookID serial primary key,
 	bookCode varchar(8),
-	-- type
+	type bookType not null,
 	dateofrelease date not null
 );
 
@@ -25,9 +24,9 @@ create table bookinlibrary (
 
 create table country(
 	countryID serial primary key,
-	name varchar(64) not null,	-- constraint unique
+	name varchar(64) unique not null,
 	population int not null,
-	averageSalary 
+	averageSalary decimal(12,2) not null
 );
 
 create table author (
@@ -35,8 +34,9 @@ create table author (
 	firstName varchar(32) not null,
 	lastName varchar(64) not null,
 	dateOfBirth date not null,
-	dateOfDeath date,		 -- constraint datum ne moze biti u buducnosti
-	gender tinyint not null, -- constraint ili 0,1,2,9
+	dateOfDeath date,
+	gender smallint not null,
+	constraint author_gender_value check (gender between 0 and 2 or gender = 9),
 	country int foreign key references country(countryID) not null
 );
 
@@ -58,13 +58,9 @@ create table user (
 	userID serial primary key,
 	firstName varchar(32) not null,
 	lastName varchar(64) not null,
-	fees float default 0.0	-- da koristim float ili numeric?
+	-- fees numeric(12,2) default 0.0	--ovo promjeniti u bigint i spremat cente
+	-- mozda jednostavnije ne pamtit dugovanja samo u selectu izbacit korisnike koji imaju dugovanja iako ovo nije najbolje rjesenje problema
 );
--- mozda dodat tablicu iskaznica pa dodat datum trajanja iskaznice
--- i u kojoj je knjiznici je uclanjen user
--- pa bi za posudivanje knjige morao provjeriti nalazi li se knjiga 
--- koju zeli posudit u toj knjiznici i je li mu iskaznica valjana i 
--- je li posudio vise od tri knjige
 
 create table borrows (
 	userID int foreign key references user(userID) not null,
@@ -72,10 +68,9 @@ create table borrows (
 	dateOfBorrowing date not null,
 	dateToReturn date,
 	dateOfReturn date	-- knjiga je vracena ako ovaj datum IS NOT NULL
-	-- constraint provjerit je li user posudio vise od tri knjige
 );
 
--- procedura za posudivanje knjige, sprema podatke u borrows
+-- procedura za posudivanje knjige, sprema podatke u borrows provjerit jel korisnik posudio vise od tri knjige
 
 -- ● ime, prezime, spol (ispisati ‘MUŠKI’, ‘ŽENSKI’, ‘NEPOZNATO’, ‘OSTALO’;), ime države i 
 --	 prosječna plaća u toj državi svakom autoru
