@@ -17,8 +17,8 @@ create table book (
 );
 
 create table bookinlibrary (
-	libraryID int foreign key  references library(libraryID),
-	bookID int foreign key references books(bookID),
+	libraryID int references library(libraryID),
+	bookID int references books(bookID),
 	primary key(libraryID, bookID)
 );
 
@@ -37,12 +37,12 @@ create table author (
 	dateOfDeath date,
 	gender smallint not null,
 	constraint author_gender_value check (gender between 0 and 2 or gender = 9),
-	country int foreign key references country(countryID) not null
+	country int references country(countryID) not null
 );
 
 create table wrote (
-	bookID int foreign key references book(bookID) not null,
-	authorID int foreign key references author(authorID) not null,
+	bookID int references book(bookID) not null,
+	authorID int references author(authorID) not null,
 	primary key (bookID, authorID),
 	isMainAuthor boolean not null
 );
@@ -51,7 +51,7 @@ create table bookkeeper (
 	bookkeeperID serial primary key,
 	firstName varchar(32) not null,
 	lastName varchar(64) not null,
-	worksInLibraryID int foreign key references library(libraryID) not null
+	worksInLibraryID int references library(libraryID) not null
 );
 
 create table user (
@@ -63,14 +63,21 @@ create table user (
 );
 
 create table borrows (
-	userID int foreign key references user(userID) not null,
-	bookID int foreign key references book(bookID) not null,
+	userID int references user(userID) not null,
+	bookID int references book(bookID) not null,
 	dateOfBorrowing date not null,
-	dateToReturn date,
-	dateOfReturn date	-- knjiga je vracena ako ovaj datum IS NOT NULL
+	dateToReturn date not null,
+	dateOfReturn date,	-- knjiga je vracena ako ovaj datum IS NOT NULL
+	constraint too_many_books check (select count(*) from (select b.userID from borrows b where userID = b.userID and b.dateOfReturn is null))>3,	-- pogledaj moze li se ovo nekako jednostavnije s grupiranjem il necim
+	constraint invalid_return_date check (datediff(dateOfBorrowing, dateToReturn) > 60)
 );
 
--- procedura za posudivanje knjige, sprema podatke u borrows provjerit jel korisnik posudio vise od tri knjige
+create procedure borrowBook (userID int, bookID int)
+language sql
+as $$
+	insert into borrows(userID, bookID, dateOfBorrowing, dateToReturn)
+	values (@userID, @bookID, current_date, current_date + 20)
+$$;
 
 -- ● ime, prezime, spol (ispisati ‘MUŠKI’, ‘ŽENSKI’, ‘NEPOZNATO’, ‘OSTALO’;), ime države i 
 --	 prosječna plaća u toj državi svakom autoru
