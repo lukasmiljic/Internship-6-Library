@@ -6,8 +6,10 @@ create table library (
 	libraryID serial primary key,
 	name varchar(64) not null,
 	openTime time,
-	closeTime time
+	closeTime time,
+	constraint open_close_time_invalid check (closeTime > openTime)
 );
+
 create type bookType as enum('school', 'art', 'science', 'biography', 'tehnical');
 create table book (
 	bookID serial primary key,
@@ -67,17 +69,22 @@ create table borrows (
 	bookID int references book(bookID) not null,
 	dateOfBorrowing date not null,
 	dateToReturn date not null,
-	dateOfReturn date,	-- knjiga je vracena ako ovaj datum IS NOT NULL
-	-- constraint too_many_books check (select count(*) from (select b.userID from borrows b where userID = b.userID and b.dateOfReturn is null))>3,	-- nemoze se koristit select u checku
+	dateOfReturn date,
 	constraint invalid_return_date check ((dateToReturn - dateOfBorrowing) > 60)
 );
 
 create procedure borrowBook (userID int, bookID int)
-language sql
 as $$
-	insert into borrows(userID, bookID, dateOfBorrowing, dateToReturn)
-	values (@userID, @bookID, current_date, current_date + 20)
-$$;
+begin
+if (select count(*) from (select b.userID from borrows b where userID = b.userID and b.dateOfReturn is null)) >= 3 then
+raise exception 'Too many borowed books!';
+return;
+end if;
+insert into borrows(userID, bookID, dateOfBorrowing, dateToReturn)
+		values (@userID, @bookID, current_date, current_date + 20);
+end;
+$$
+language plpgsql;
 
 -- ● ime, prezime, spol (ispisati ‘MUŠKI’, ‘ŽENSKI’, ‘NEPOZNATO’, ‘OSTALO’;), ime države i 
 --	 prosječna plaća u toj državi svakom autoru
