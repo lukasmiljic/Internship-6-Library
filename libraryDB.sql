@@ -1,6 +1,6 @@
-create table libraryDB
+-- create table libraryDB
 --
-use libraryDB
+-- use libraryDB
 
 create table library (
 	libraryID serial primary key,
@@ -18,7 +18,7 @@ create table book (
 
 create table bookinlibrary (
 	libraryID int references library(libraryID),
-	bookID int references books(bookID),
+	bookID int references book(bookID),
 	primary key(libraryID, bookID)
 );
 
@@ -54,22 +54,22 @@ create table bookkeeper (
 	worksInLibraryID int references library(libraryID) not null
 );
 
-create table user (
+create table libraryUser (
 	userID serial primary key,
 	firstName varchar(32) not null,
-	lastName varchar(64) not null,
+	lastName varchar(64) not null
 	-- fees numeric(12,2) default 0.0	--ovo promjeniti u bigint i spremat cente
 	-- mozda jednostavnije ne pamtit dugovanja samo u selectu izbacit korisnike koji imaju dugovanja iako ovo nije najbolje rjesenje problema
 );
 
 create table borrows (
-	userID int references user(userID) not null,
+	userID int references libraryUser(userID) not null,
 	bookID int references book(bookID) not null,
 	dateOfBorrowing date not null,
 	dateToReturn date not null,
 	dateOfReturn date,	-- knjiga je vracena ako ovaj datum IS NOT NULL
-	constraint too_many_books check (select count(*) from (select b.userID from borrows b where userID = b.userID and b.dateOfReturn is null))>3,	-- pogledaj moze li se ovo nekako jednostavnije s grupiranjem il necim
-	constraint invalid_return_date check (datediff(dateOfBorrowing, dateToReturn) > 60)
+	-- constraint too_many_books check (select count(*) from (select b.userID from borrows b where userID = b.userID and b.dateOfReturn is null))>3,	-- nemoze se koristit select u checku
+	constraint invalid_return_date check ((dateToReturn - dateOfBorrowing) > 60)
 );
 
 create procedure borrowBook (userID int, bookID int)
